@@ -2,10 +2,6 @@
 
 Our viewer allows you to generate and edit B-reps using BrepDiff.
 It also supports loading and visualizing precomputed denoising trajectories.
-A set of illustrative pre-computed [trajectories](#savingloading-trajectories) are available at [TODO].
-
-⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
-TODO: updated/add all GIFs and Images
 
 ## Generation
 
