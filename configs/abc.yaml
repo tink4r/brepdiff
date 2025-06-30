@@ -1,0 +1,158 @@
+##### DATA #####
+dataset: abc_50
+data_dim: 3
+h5_path: './data/abc_processed/v1_1_grid8.h5'
+n_faces_path: "./data/abc_processed/abc_50_train_n_faces.npz"
+n_grid: 8
+max_n_prims: 50  # maximum number of primitives.
+random_augmentations: "scale_translate"
+scale_min: 0.7
+scale_max: 1.2
+translate_min: -0.2
+translate_max: 0.2
+
+##### MODEL #####
+model: brepdiff
+z_dim: 256  # dimension of global latent
+
+# dimension of token to diffuse
+x_dim: 256
+token_vae_ckpt_path: ""
+
+tokenizer:
+  name: pre_mask_uv_tokenizer_3d
+detokenizer:
+  name: dedup_uv_detokenizer_3d
+tokenizer_dedup_thresh: 0.05
+
+# Diffusion 
+diffusion:
+  name: "separate_gaussian_diffusion_1d"
+
+  training_timesteps: 1000
+  inference_timesteps: 1000
+  objective: "pred_noise"
+  linear_beta0: 0.0001
+  linear_betaT: 0.02
+  cosine_s: 0.008
+  sqrt_s: 0.0001
+  sigmoid_start: -3
+  sigmoid_end: 3
+  sigmoid_tau: 0.5
+  snr_min: 0.01
+  snr_max: 1000
+  snr_power: 1.0
+
+  # separate noise schedules for augmented uvgrid
+  coord_noise_schedule: "snr_based"
+  coord_timesteps: 1000
+  grid_mask_noise_schedule: "snr_based"
+  grid_mask_timesteps: 500
+
+  z_conditioning: False
+  cfg_scales: [1.0]
+  self_condition: False
+
+  model:
+    name: "two_dit_1d"
+    options: 
+      hidden_size: 768
+      depth: 12
+      num_heads: 12
+      use_pe: False
+      final_residual: False
+      uncond_prob: 0.1
+      dropout: 0.
+      t_low_timesteps: 500
+
+
+##### TRAIN #####
+alpha_coord: 1.
+alpha_grid_mask: 1.
+
+batch_size: 512
+num_epochs: 6000
+summary_step: 100
+
+optimizer:
+  type: AdamW
+  options:
+    lr: 0.0005
+    weight_decay: 0.00000001
+
+clip_grad:
+  type: norm
+  options:
+    max_norm: 0.5
+
+lr_scheduler:
+  type: StepLR
+  options:
+    step_size: 100000
+    gamma: 1.0
+
+test_on_training_end: True  # test on end of training with best ckpt
+
+##### POSTPROCESSING #####
+pp_grid_res: 128  # resolution for postprocessing grid res, such as winding numbers or occupancy
+
+##### EVAL #####
+val_epoch: 200
+limit_val_batches: 1.0
+val_batch_size: 512
+val_num_sample: 2048
+
+##### TEST #####
+test_in_loop: True  # testing does not really make sense
+test_nth_val: 1 # test will be called every n-th validation
+n_pc_metric_samples: 512  # number of testing shapes to be used for pc_metric eval during training
+
+# WARNING! I use less for now!
+test_num_sample: 10000 # number of testing dataset and generated shapes to compare
+test_num_pts: 2000 # number of points to sample during testing, if less, duplicate
+test_batch_size: 512
+
+sample_mode: data
+test_chunk: ""  # to create 4 chunks, give 1/4 (and 2/4, 3/4, 4/4) as argument
+
+##### VIS #####
+vis_train_step: 200000
+vis:
+  vis_batch: "first" #["first", "all"], Visualize only the first batch or all
+  vis_idxs: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]  # idx to visualize
+  n_examples: 0
+  img:
+    height: 50
+    width: 50
+    alpha: 0.9
+    axis_ranges: [
+      [-1.1, 1.1],
+      [-1.1, 1.1],
+    ]
+  n_gen_samples: 12
+  max_trajectory_points: 2
+  trajectory_stride: 20
+  vis_trajectory: True
+  vis_test: True # Visualize at test_step(): only turn on when standalone test with doing run.py --test
+  render_blender: True
+
+##### CHECKPOINT #####
+#ckpt_every_n_train_steps: 2000 (Deprecated : checkpoint is on every val_epoch since it needs val_loss)
+save_top_k: 5
+ckpt_file_name: "{epoch:04d}-{step:06d}-{val_loss:.4f}"
+monitor:  val_loss #["1_nna", "val_loss", "params_error"]
+
+##### UTILS #####
+num_workers: 16
+seed: 0
+accelerator: gpu
+devices: 1
+fast_dev_run: False
+overfit: False
+compile: True  # use torch.compile
+
+
+##### DEBUG #####
+debug_data_size: 1024
+overfit_data_size: 1  # number of data to overfit
+overfit_data_repetition: 2048  # repeat dataset, since batch might be bigger than data size
