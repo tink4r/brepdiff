@@ -53,7 +53,7 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cm
 # ------------------------------------------------------------
 # 4. Clone brepdiff repo and submodules
 # ------------------------------------------------------------
-RUN git clone --branch code-release https://github.com/brepdiff/brepdiff.git && \
+RUN git clone https://github.com/brepdiff/brepdiff.git && \
     cd brepdiff && \
     git submodule update --init --recursive
 WORKDIR /brepdiff
