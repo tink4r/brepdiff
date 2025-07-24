@@ -54,6 +54,7 @@ If you find this work useful, please consider citing:
     location = {Vancouver, BC, Canada},
     series = {SIGGRAPH Conference Papers '25}
 }
+```
 ---
 
 ## 📜 License
