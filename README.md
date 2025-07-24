@@ -39,14 +39,21 @@ If you find this work useful, please consider citing:
 
 ```bibtex
 @inproceedings{lee2025brepdiff,
-  title     = {BrepDiff: Single-stage B-rep Diffusion Model},
-  author    = {Lee, Mingi and Zhang, Dongsu and Jambon, Clément and Kim, Young Min},
-  booktitle = {SIGGRAPH Conference Papers},
-  year      = {2025},
-  doi       = {10.1145/3721238.3730698}
+    author = {Lee, Mingi and Zhang, Dongsu and Jambon, Cl\'{e}ment and Kim, Young Min},
+    title = {BrepDiff: Single-Stage B-rep Diffusion Model},
+    year = {2025},
+    isbn = {9798400715402},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3721238.3730698},
+    doi = {10.1145/3721238.3730698},
+    booktitle = {Proceedings of the Special Interest Group on Computer Graphics and Interactive Techniques Conference Conference Papers},
+    articleno = {103},
+    numpages = {11},
+    keywords = {Boundary representation, Generative model, Diffusion Model},
+    location = {Vancouver, BC, Canada},
+    series = {SIGGRAPH Conference Papers '25}
 }
-```
-
 ---
 
 ## 📜 License
