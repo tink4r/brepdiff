@@ -81,7 +81,7 @@ Also, keep in mind that after you install the dependencies, check the numpy vers
 
 ### Basic Installation
 ```
-conda create -n brepdiff python==3.9
+conda create -n brepdiff python=3.9
 conda activate brepdiff
 pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cu118
 pip install torch-cluster -f https://data.pyg.org/whl/torch-2.2.0+cu118.html
