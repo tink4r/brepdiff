@@ -8,7 +8,7 @@ SIGGRAPH 2025
 [Mingi Lee<sup>*</sup>](https://mingilikesmangos.github.io/), [Dongsu Zhang<sup>*</sup>](https://dszhang.me/about), [Clément Jambon<sup>*</sup>](https://clementjambon.github.io/), [Young Min Kim](https://3d.snu.ac.kr/members/)  
 <sup>*</sup> Equal contribution  
 
-[[Project page]](https://brepdiff.github.io/) · [[Paper]](https://drive.google.com/file/d/1ZkdjmljmbJer5Lbn55UwKRqR9AcHBydA/view?usp=sharing)
+[[Project page]](https://brepdiff.github.io/) · [[Paper]](https://dl.acm.org/doi/10.1145/3721238.3730698)
 
 ---
 
