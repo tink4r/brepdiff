@@ -28,6 +28,8 @@ Download the dataset from [Google Drive](https://drive.google.com/drive/folders/
 - `abc_50_*` contains the splits for the ABC 50-face subset.
 - The `*_pkl_absence.txt` files list missing samples relative to BrepGen. For the DeepCAD dataset, this should be empty,  so do not worry about it.
 
+Looking to run quick overfitting experiments on your own STEP parts? Follow the dedicated walkthrough in [🔧 Overfitting BrepDiff on Custom STEP Data](docs/custom_overfit.md).
+
 ---
 
 ## 🚀 Training
