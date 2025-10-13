@@ -433,13 +433,17 @@ def main(
     output_render_dir = output_dir
 
     # Get list of STEP files
+valid_suffixes = {".step", ".stp"}
+
     if input_dir_or_path.is_file():
-        if not input_dir_or_path.suffix.lower() == ".step":
-            typer.echo("Input file must be a STEP file")
+        if input_dir_or_path.suffix.lower() not in valid_suffixes:
+            typer.echo("Input file must use a STEP/STP extension")
             raise typer.Exit(1)
         step_files = [input_dir_or_path]
     else:
         step_files = list(sorted(input_dir_or_path.glob("*.step")))
+        step_files += list(sorted(input_dir_or_path.glob("*.stp")))
+        step_files = sorted(step_files)
         if len(step_files) > n_steps:
             print(
                 f"Warning: {len(step_files)} STEP files found, only rendering {n_steps} steps"
