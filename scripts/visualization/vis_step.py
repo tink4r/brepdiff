@@ -433,7 +433,7 @@ def main(
     output_render_dir = output_dir
 
     # Get list of STEP files
-valid_suffixes = {".step", ".stp"}
+    valid_suffixes = {".step", ".stp"}
 
     if input_dir_or_path.is_file():
         if input_dir_or_path.suffix.lower() not in valid_suffixes:
