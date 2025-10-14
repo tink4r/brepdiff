@@ -1,0 +1,152 @@
+##### DATA #####
+dataset: custom_step
+data_dim: 3
+h5_path: "./data/custom_uvgrid/custom.h5"
+n_faces_path: ""
+n_grid: 8
+max_n_prims: 50
+random_augmentations: "scale_translate"
+scale_min: 0.7
+scale_max: 1.2
+translate_min: -0.2
+translate_max: 0.2
+
+##### MODEL #####
+model: brepdiff
+z_dim: 256  # dimension of global latent
+x_dim: 256  # dimension of token to diffuse
+token_vae_ckpt_path: ""
+
+tokenizer:
+  name: pre_mask_uv_tokenizer_3d
+detokenizer:
+  name: dedup_uv_detokenizer_3d
+tokenizer_dedup_thresh: 0.05
+
+diffusion:
+  name: "separate_gaussian_diffusion_1d"
+  training_timesteps: 1000
+  inference_timesteps: 1000
+  objective: "pred_noise"
+  linear_beta0: 0.0001
+  linear_betaT: 0.02
+  cosine_s: 0.008
+  sqrt_s: 0.0001
+  sigmoid_start: -3
+  sigmoid_end: 3
+  sigmoid_tau: 0.5
+  snr_min: 0.01
+  snr_max: 1000
+  snr_power: 1.0
+
+    # separate noise schedules for augmented uvgrid
+  coord_noise_schedule: "snr_based"
+  coord_timesteps: 1000
+  grid_mask_noise_schedule: "snr_based"
+  grid_mask_timesteps: 500
+
+  z_conditioning: False
+  cfg_scales: [1.0]
+  self_condition: False
+  model:
+    name: "two_dit_1d"
+    options:
+      hidden_size: 768
+      depth: 12
+      num_heads: 12
+      use_pe: False
+      final_residual: False
+      uncond_prob: 0.1
+      dropout: 0.0
+      t_low_timesteps: 500
+
+##### TRAIN #####
+alpha_coord: 1.0
+alpha_grid_mask: 1.0
+
+# 下面这些训练设置与 abc.yaml 不同，主要是为了方便在单个样本上做快速过拟合调试。
+batch_size: 16
+num_epochs: 200
+summary_step: 50
+
+overfit: True
+overfit_data_size: 1
+overfit_data_repetition: 2048
+
+debug: False
+
+test_on_training_end: False
+
+optimizer:
+  type: AdamW
+  options:
+    lr: 0.0005
+    weight_decay: 0.00000001
+
+clip_grad:
+  type: norm
+  options:
+    max_norm: 0.5
+
+lr_scheduler:
+  type: StepLR
+  options:
+    step_size: 100000
+    gamma: 1.0
+
+##### POSTPROCESSING #####
+pp_grid_res: 128
+
+##### EVAL #####
+val_epoch: 50
+limit_val_batches: 1.0
+val_batch_size: 16
+val_num_sample: 1
+
+##### TEST #####
+test_in_loop: False
+test_nth_val: 1
+n_pc_metric_samples: 1
+test_num_sample: 1
+test_num_pts: 2000
+test_batch_size: 16
+sample_mode: data
+test_chunk: ""
+
+test_use_resampling: False
+
+##### VIS #####
+vis_train_step: 1000
+vis:
+  vis_batch: "first"
+  vis_idxs: [0]
+  n_examples: 0
+  img:
+    height: 75
+    width: 75
+    alpha: 0.9
+    axis_ranges:
+      - [-1.1, 1.1]
+      - [-1.1, 1.1]
+  n_gen_samples: 4
+  max_trajectory_points: 2
+  trajectory_stride: 20
+  vis_trajectory: True
+  vis_test: True
+  render_blender: False
+
+##### CHECKPOINT #####
+save_top_k: 1
+ckpt_file_name: "{epoch:04d}-{step:06d}-{val_loss:.4f}"
+monitor: val_loss
+
+##### UTILS #####
+num_workers: 8
+seed: 0
+accelerator: gpu
+devices: 1
+fast_dev_run: False
+compile: False
+
+##### DEBUG #####
+debug_data_size: 16
