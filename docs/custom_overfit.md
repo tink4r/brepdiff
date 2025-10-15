@@ -26,14 +26,25 @@ This script reads the STEP solid with OpenCascade, discretises faces and edges, 
 
 Training expects an HDF5 file where each sample is stored under `data/<uid>` with the following datasets: `coords`, `normals`, `masks`, and `types`. The ABC/DeepCAD loader shows the required layout when it reads the file.【F:src/brepdiff/datasets/abc_dataset.py†L63-L114】 The values come directly from the UV-grid tensors; `types` can be set to a constant (e.g., all ones) when labels are unavailable.
 
-The snippet below turns one processed UV-grid into the right structure:
+Run the helper script to package all NPZ files into the correct HDF5 structure and emit a matching split list:
+
+```bash
+python -m scripts.postprocessing.npz_to_h5 convert \
+    data/custom_uvgrid/npz_for_vis \
+    data/custom_uvgrid/custom.h5 \
+    --list-path data/custom_uvgrid/custom_train.txt
+```
+
+The command strips the `_uvgrid` suffix from each file name to build the dataset ids, writes the tensors into `custom.h5`, and records the ids inside `custom_train.txt`.【F:scripts/postprocessing/npz_to_h5.py†L104-L166】
+
+If you prefer to script the conversion yourself, the snippet below illustrates the file structure expected by the loader:
 
 ```python
 import h5py
 import numpy as np
 from brepdiff.primitives.uvgrid import UvGrid
 
-uvgrid = UvGrid.load("data/custom_uvgrid/my_part_uvgrid.npz")
+uvgrid = UvGrid.load_from_npz_data(dict(np.load("data/custom_uvgrid/my_part_uvgrid.npz")))
 uid = "my_part"
 
 with h5py.File("data/custom_uvgrid/custom.h5", "a") as f:
@@ -44,7 +55,6 @@ with h5py.File("data/custom_uvgrid/custom.h5", "a") as f:
     entry.create_dataset("coords", data=uvgrid.coord)
     entry.create_dataset("normals", data=uvgrid.normal)
     entry.create_dataset("masks", data=uvgrid.grid_mask)
-    # Primitive labels (set to 1 so that 0 remains reserved for "empty")
     entry.create_dataset("types", data=np.ones((uvgrid.coord.shape[0],), dtype=np.int32))
 ```
 
