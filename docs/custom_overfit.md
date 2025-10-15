@@ -29,7 +29,7 @@ Training expects an HDF5 file where each sample is stored under `data/<uid>` wit
 Run the helper script to package all NPZ files into the correct HDF5 structure and emit a matching split list:
 
 ```bash
-python -m scripts.postprocessing.npz_to_h5 convert \
+python -m scripts.postprocessing.npz_to_h5 \
     data/custom_uvgrid/npz_for_vis \
     data/custom_uvgrid/custom.h5 \
     --list-path data/custom_uvgrid/custom_train.txt

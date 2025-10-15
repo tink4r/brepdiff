@@ -4,6 +4,7 @@ import numpy as np
 import subprocess
 import sys
 import tempfile
+import traceback
 import trimesh
 from pathlib import Path
 from tqdm import tqdm
@@ -216,6 +217,7 @@ def process_step_file(
 
     except Exception as e:
         print(f"Error processing file {step_file}: {e}")
+        traceback.print_exc()
         return None
 
 
