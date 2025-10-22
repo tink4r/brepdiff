@@ -10,10 +10,14 @@ from pathlib import Path
 from occwl.solid import Solid
 from occwl.uvgrid import uvgrid
 from OCC.Core.TopoDS import TopoDS_Solid, TopoDS_Compound, TopoDS_CompSolid
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopAbs import TopAbs_SOLID
+from OCC.Core.TopoDS import topods
 from OCC.Extend.DataExchange import write_step_file
 from brepdiff.primitives.uvgrid import UvGrid
 from brepdiff.postprocessing.occ_wrapper import write_stl_with_timeout
-
+import warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 def normalize_to_unit_cube(
     coords: np.ndarray,
@@ -60,9 +64,12 @@ def normalize_to_unit_cube(
 def parse_solid(solid, num_u: int = 8, num_v: int = 8, normalize=True):
     """
     Parse the surface information needed for UvGrid creation from a CAD solid.
+    
+    Now supports both single solids and compounds (multiple solids).
+    For compounds, all solids are processed and their faces are merged together.
 
     Args:
-    - solid (occwl.solid): A single brep solid in occwl data format.
+    - solid (occwl.solid): A single brep solid or compound in occwl data format.
     - num_u: u resolution (default: 8)
     - num_v: v resolution (default: 8)
     - normalize: normalize to fit in unit bbox
@@ -72,39 +79,94 @@ def parse_solid(solid, num_u: int = 8, num_v: int = 8, normalize=True):
     """
     assert isinstance(solid, (Solid, TopoDS_Solid, TopoDS_Compound, TopoDS_CompSolid))
 
-    if isinstance(solid, TopoDS_Solid):
-        solid = Solid(solid)
-    elif isinstance(solid, (TopoDS_Compound, TopoDS_CompSolid)):
-        solid = Solid(solid, allow_compound=True)
+    # multiple solids (TopoDS_Compound or TopoDS_CompSolid)
+    if isinstance(solid, (TopoDS_Compound, TopoDS_CompSolid)):
+        # Iterate over all solids
+        solid_explorer = TopExp_Explorer(solid, TopAbs_SOLID)
+        solids_list = []
+        
+        while solid_explorer.More():
+            current_solid = topods.Solid(solid_explorer.Current())
+            solids_list.append(current_solid)
+            solid_explorer.Next()
+        
+        if len(solids_list) == 0:
+            raise ValueError("Compound contains no solids!")
+        
+        print(f"Detected {len(solids_list)} solids, merging all parts for processing")
+        
+        all_face_pnts = []
+        all_face_normals = []
+        all_face_masks = []
+        
+        for idx, single_solid in enumerate(solids_list):
+            try:
+                occwl_solid = Solid(single_solid)
+                
+                # Split closed surface and closed curve to halve
+                occwl_solid = occwl_solid.split_all_closed_faces(num_splits=0)
+                occwl_solid = occwl_solid.split_all_closed_edges(num_splits=0)
+                
+                # Sample uv-grid from each face
+                for face in occwl_solid.faces():
+                    # Sample points and normals
+                    points = uvgrid(face, method="point", num_u=num_u, num_v=num_v)
+                    all_face_pnts.append(points)
+                    normals = uvgrid(face, method="normal", num_u=num_u, num_v=num_v)
+                    all_face_normals.append(normals)
+
+                    # Get visibility mask
+                    visibility_status = uvgrid(
+                        face, method="visibility_status", num_u=num_u, num_v=num_v
+                    )
+                    mask = np.logical_or(
+                        visibility_status == 0, visibility_status == 2
+                    )  # 0: Inside, 1: Outside, 2: On boundary
+                    all_face_masks.append(mask)
+                    
+            except Exception as e:
+                print(f"warning: Error processing solid {idx+1}: {e}, skipping this part")
+                continue
+        
+        if len(all_face_pnts) == 0:
+            raise ValueError("All solids processing failed, cannot generate uvgrid")
+        
+        # Stack all faces from all solids
+        face_pnts = np.stack(all_face_pnts)  # N x n_u x n_v x 3
+        face_normals = np.stack(all_face_normals)  # N x n_u x n_v x 3
+        face_masks = np.stack(all_face_masks).squeeze(-1)  # N x n_u x n_v
+        
     else:
-        raise ValueError(f"Unsupported solid type: {type(solid)}")
+        # Single solid processing logic (original code)
+        if isinstance(solid, TopoDS_Solid):
+            solid = Solid(solid)
+        
+        # Split closed surface and closed curve to halve
+        solid = solid.split_all_closed_faces(num_splits=0)
+        solid = solid.split_all_closed_edges(num_splits=0)
 
-    # Split closed surface and closed curve to halve
-    solid = solid.split_all_closed_faces(num_splits=0)
-    solid = solid.split_all_closed_edges(num_splits=0)
+        # Sample uv-grid from each face
+        face_pnts, face_normals, face_masks = [], [], []
+        for face in solid.faces():
+            # Sample points and normals
+            points = uvgrid(face, method="point", num_u=num_u, num_v=num_v)
+            face_pnts.append(points)
+            normals = uvgrid(face, method="normal", num_u=num_u, num_v=num_v)
+            face_normals.append(normals)
 
-    # Sample uv-grid from each face
-    face_pnts, face_normals, face_masks = [], [], []
-    for face in solid.faces():
-        # Sample points and normals
-        points = uvgrid(face, method="point", num_u=num_u, num_v=num_v)
-        face_pnts.append(points)
-        normals = uvgrid(face, method="normal", num_u=num_u, num_v=num_v)
-        face_normals.append(normals)
+            # Get visibility mask
+            visibility_status = uvgrid(
+                face, method="visibility_status", num_u=num_u, num_v=num_v
+            )
+            mask = np.logical_or(
+                visibility_status == 0, visibility_status == 2
+            )  # 0: Inside, 1: Outside, 2: On boundary
+            face_masks.append(mask)
 
-        # Get visibility mask
-        visibility_status = uvgrid(
-            face, method="visibility_status", num_u=num_u, num_v=num_v
-        )
-        mask = np.logical_or(
-            visibility_status == 0, visibility_status == 2
-        )  # 0: Inside, 1: Outside, 2: On boundary
-        face_masks.append(mask)
-
-    # Stack all faces
-    face_pnts = np.stack(face_pnts)  # N x n_u x n_v x 3
-    face_normals = np.stack(face_normals)  # N x n_u x n_v x 3
-    face_masks = np.stack(face_masks).squeeze(-1)  # N x n_u x n_v
+        # Stack all faces
+        face_pnts = np.stack(face_pnts)  # N x n_u x n_v x 3
+        face_normals = np.stack(face_normals)  # N x n_u x n_v x 3
+        face_masks = np.stack(face_masks).squeeze(-1)  # N x n_u x n_v
 
     if normalize:
         # Normalize coordinates and normals to unit cube
