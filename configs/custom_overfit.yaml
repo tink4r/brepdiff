@@ -4,7 +4,7 @@ data_dim: 3
 h5_path: "./data/custom_uvgrid/custom.h5"
 n_faces_path: ""
 n_grid: 8
-max_n_prims: 50
+max_n_prims: 200  # 最大面数
 random_augmentations: "scale_translate"
 scale_min: 0.7
 scale_max: 1.2
@@ -133,7 +133,7 @@ vis:
   trajectory_stride: 20
   vis_trajectory: True
   vis_test: True
-  render_blender: False
+  render_blender: True
 
 ##### CHECKPOINT #####
 save_top_k: 1
